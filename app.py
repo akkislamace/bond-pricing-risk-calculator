@@ -14,9 +14,11 @@ st.markdown(
 )
 
 
-# Changed cache key version to 'v3' to force Streamlit to ignore old cached data
-@st.cache_data(show_spinner=True)
+@st.cache_data
 def load_data_v3():
+  # Clear cache explicitly and delete stale sqlite file
+  st.cache_data.clear()
+
   if os.path.exists("bonds.db"):
     try:
       os.remove("bonds.db")
