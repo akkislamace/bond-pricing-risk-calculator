@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
-from pricing_model import calculate_prices
-from risk_analytics import calculate_risk_metrics
+from src.pricing_model import calculate_prices
+from src.risk_analytics import calculate_risk_metrics
 from src.data_generator import generate_bond_universe, generate_yield_curve
 from src.database import get_engine
 
