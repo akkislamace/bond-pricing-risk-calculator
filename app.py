@@ -1,5 +1,8 @@
 import pandas as pd
 import streamlit as st
+from pricing_model import calculate_prices
+from risk_analytics import calculate_risk_metrics
+from src.data_generator import generate_bond_universe, generate_yield_curve
 from src.database import get_engine
 
 st.set_page_config(
@@ -17,7 +20,7 @@ st.markdown(
 def load_data():
   engine = get_engine()
   try:
-    # Try reading the existing tables directly
+    # Try reading the complete tables from the SQLite database
     df_pricing = pd.read_sql("bond_pricing_results", engine)
     df_risk = pd.read_sql("bond_risk_metrics", engine)
     df_full = pd.merge(
@@ -25,23 +28,31 @@ def load_data():
     )
     return df_full
   except Exception:
-    # Fallback: if tables aren't built yet, read directly from the bonds table or create a safe dummy dataframe
-    try:
-      return pd.read_sql("bonds", engine)
-    except Exception:
-      # Absolute safety net so the app never crashes on boot
-      return pd.DataFrame({
-          "bond_id": [1, 2, 3],
-          "coupon": [0.05, 0.06, 0.04],
-          "maturity": [5, 10, 3],
-          "estimated_ytm": [0.052, 0.058, 0.041],
-      })
+    # If tables don't exist yet, generate the full dataset of 50 synthetic bonds on the fly
+    df_bonds = generate_bond_universe(n_bonds=50)
+    df_curve = generate_yield_curve()
+
+    df_pricing = calculate_prices(df_bonds, df_curve)
+    df_risk = calculate_risk_metrics(df_bonds, df_curve)
+
+    # Save them to the SQLite database tables
+    df_pricing.to_sql(
+        "bond_pricing_results", con=engine, if_exists="replace", index=False
+    )
+    df_risk.to_sql(
+        "bond_risk_metrics", con=engine, if_exists="replace", index=False
+    )
+
+    df_full = pd.merge(
+        df_pricing, df_risk[["bond_id", "estimated_ytm"]], on="bond_id"
+    )
+    return df_full
 
 
-# Load and display data
+# Load data and render the dashboard
 try:
   df = load_data()
-  st.success("Dashboard connected successfully!")
+  st.success("Dashboard connected and full bond dataset loaded successfully!")
   st.dataframe(df, use_container_width=True)
 except Exception as e:
   st.error(f"Error loading dashboard: {e}")
