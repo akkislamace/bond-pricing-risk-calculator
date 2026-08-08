@@ -1,11 +1,17 @@
+import os
 import pandas as pd
 from sqlalchemy import create_engine
 from src.data_generator import generate_bond_universe, generate_yield_curve
 
-# Replace 'YOUR_PASSWORD' with the master password you set in pgAdmin!
-DB_URI = 'postgresql://postgres:Akshay16@localhost:5432/quant_db'
+# Use SQLite on Streamlit Cloud, and PostgreSQL when running locally on your laptop
+if os.path.exists("/mount/src"):
+    DB_URI = "sqlite:///bonds.db"
+else:
+    DB_URI = 'postgresql://postgres:Akshay16@localhost:5432/quant_db'
 
 def get_engine():
+    if DB_URI.startswith("sqlite"):
+        return create_engine(DB_URI, connect_args={"check_same_thread": False})
     return create_engine(DB_URI)
 
 def initialize_database():
