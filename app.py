@@ -14,9 +14,9 @@ st.markdown(
 )
 
 
-@st.cache_data
-def load_data():
-  # Delete stale sqlite file if it exists to force a clean rebuild
+# Changed cache key version to 'v3' to force Streamlit to ignore old cached data
+@st.cache_data(show_spinner=True)
+def load_data_v3():
   if os.path.exists("bonds.db"):
     try:
       os.remove("bonds.db")
@@ -24,8 +24,6 @@ def load_data():
       pass
 
   engine = get_engine()
-
-  # Generate fresh 50-bond dataset with all required columns
   from src.data_generator import generate_bond_universe
 
   df_bonds = generate_bond_universe(n_bonds=50)
@@ -42,9 +40,8 @@ def load_data():
   return df_bonds
 
 
-# Load data and render the dashboard
 try:
-  df = load_data()
+  df = load_data_v3()
   st.success("Dashboard connected and full bond dataset loaded successfully!")
   st.dataframe(df, use_container_width=True)
 except Exception as e:
