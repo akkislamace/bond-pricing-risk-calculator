@@ -9,12 +9,23 @@ st.markdown("Analyze synthetic bond universes, evaluate theoretical mispricing, 
 
 @st.cache_data
 def load_data():
-    engine = get_engine()
+  engine = get_engine()
+  try:
     df_pricing = pd.read_sql('bond_pricing_results', engine)
     df_risk = pd.read_sql('bond_risk_metrics', engine)
-    # Merge datasets on bond_id
-    df_full = pd.merge(df_pricing, df_risk[['bond_id', 'estimated_ytm', 'macaulay_duration', 'modified_duration', 'convexity', 'dv01']], on='bond_id')
-    return df_full
+  except Exception:
+    # If tables don't exist yet, run your main pipeline script to populate them automatically
+    from main import run_pipeline
+
+    run_pipeline()
+
+    df_pricing = pd.read_sql('bond_pricing_results', engine)
+    df_risk = pd.read_sql('bond_risk_metrics', engine)
+
+  df_full = pd.merge(
+      df_pricing, df_risk[['bond_id', 'estimated_ytm']], on='bond_id'
+  )
+  return df_full
 
 df = load_data()
 
