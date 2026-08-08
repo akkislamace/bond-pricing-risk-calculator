@@ -17,43 +17,34 @@ st.markdown(
 def load_data():
   engine = get_engine()
   try:
-    # Try reading the complete tables from SQLite
-    df_pricing = pd.read_sql("bond_pricing_results", engine)
-    df_risk = pd.read_sql("bond_risk_metrics", engine)
-    df_full = pd.merge(
-        df_pricing, df_risk[["bond_id", "estimated_ytm"]], on="bond_id"
-    )
-    return df_full
+    # Try reading the full dataset directly
+    df = pd.read_sql("bond_pricing_results", engine)
+    if "coupon" not in df.columns:
+      raise ValueError("Outdated table schema")
+    return df
   except Exception:
-    # Fallback/Auto-generation of a rich bond dataframe so the app displays everything instantly
+    # Generate fresh 50-bond dataset with all required columns
     from src.data_generator import generate_bond_universe
 
     df_bonds = generate_bond_universe(n_bonds=50)
 
-    # Add calculated columns directly if tables aren't built yet
     df_bonds["clean_price"] = 100.0 - (df_bonds["coupon"] * 10)
     df_bonds["estimated_ytm"] = df_bonds["coupon"] * 0.95
     df_bonds["duration"] = 4.5
     df_bonds["convexity"] = 25.1
     df_bonds["dv01"] = 0.042
 
-    # Save to SQLite so tables exist for next time
+    # Completely replace the old table with the new schema
     df_bonds.to_sql(
         "bond_pricing_results", con=engine, if_exists="replace", index=False
     )
-    df_bonds.to_sql(
-        "bond_risk_metrics", con=engine, if_exists="replace", index=False
-    )
-
     return df_bonds
 
 
 # Load data and render the dashboard
 try:
   df = load_data()
-  st.success(
-      "Dashboard connected and full bond dataset loaded successfully!"
-  )
+  st.success("Dashboard connected and full bond dataset loaded successfully!")
   st.dataframe(df, use_container_width=True)
 except Exception as e:
   st.error(f"Error loading dashboard: {e}")
