@@ -17,29 +17,22 @@ st.markdown(
 def load_data():
   engine = get_engine()
   try:
-    # Try reading the full dataset directly
-    df = pd.read_sql("bond_pricing_results", engine)
-    if "coupon" not in df.columns:
-      raise ValueError("Outdated table schema")
+    df = pd.read_sql("bond_pricing_v2", engine)
     return df
   except Exception:
-    # Generate fresh 50-bond dataset with all required columns
     from src.data_generator import generate_bond_universe
 
     df_bonds = generate_bond_universe(n_bonds=50)
-
     df_bonds["clean_price"] = 100.0 - (df_bonds["coupon"] * 10)
     df_bonds["estimated_ytm"] = df_bonds["coupon"] * 0.95
     df_bonds["duration"] = 4.5
     df_bonds["convexity"] = 25.1
     df_bonds["dv01"] = 0.042
 
-    # Completely replace the old table with the new schema
     df_bonds.to_sql(
-        "bond_pricing_results", con=engine, if_exists="replace", index=False
+        "bond_pricing_v2", con=engine, if_exists="replace", index=False
     )
     return df_bonds
-
 
 # Load data and render the dashboard
 try:
