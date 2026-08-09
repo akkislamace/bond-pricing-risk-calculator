@@ -1,5 +1,4 @@
-pandas
-numpy
-sqlalchemy
-psycopg2-binary
-streamlit
+streamlit==1.61.1
+pandas==2.2.0
+numpy==1.26.4
+sqlalchemy==2.0.25
